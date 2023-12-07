@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compilador JS Cálculos Simples</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    #expressaoInput {
+      width: 300px;
+      margin-bottom: 10px;
+    }
+
+    #calcularBtn,
+    #uploadBtn {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    #resultados {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Compilador JS Cálculos Simples</h1>
+  <h2>Aluno: Jorge Leandro Piva</h2>
+  <h2><b>Ra: </b>820268722</h2>
+
+  <label for="expressaoInput">Insira as expressões separadas por ponto e vírgula:</label>
+
+  <textarea type="text" id="expressaoInput" placeholder="Ex: 2 + 3 * (4 - 2); 10 / (2 + 3) * 4; 8 - (5 * 2) + 7 / 2;"
+    name="story" rows="20" cols="33"></textarea>
+
+  <button id="calcularBtn">Calcular</button>
+  <input type="file" id="uploadBtn" accept=".txt" aria-label="Upload">
+
+  <div id="resultados">
+    <h2>Resultados:</h2>
+    <ul id="listaResultados"></ul>
+  </div>
+
+
+  <script>
+    function analiseLexica(expressao) {
+      const alfabeto = /[0-9+\-*/();;]/g; // Alfabeto permitido
+      const caracteresContados = {};
+
+      // Contar a ocorrência de cada caractere no alfabeto permitido
+      expressao.replace(alfabeto, (caractere) => {
+        caracteresContados[caractere] = (caracteresContados[caractere] || 0) + 1;
+        return ''; // Remover o caractere da string para separar expressões
+      });
+
+      return caracteresContados;
+    }
+
+    caracateresPermitidos = ["+", "-", "*", "/", "(", ")", ";"];
+
+    function verify_tokens(sentenca, caracteresPermitidos) {
+      let resposta = true;
+      let caracateres = sentenca;
+      console.log("caracteres" + caracateres)
+      for (let i = 0; i < caracateres.length; i++) {
+        if (isNaN(parseFloat(sentenca[i]))) {
+          if (!caracteresPermitidos.includes(sentenca[i])) {
+            console.log("o caracter " + sentenca[i] + " não é permitido");
+            resposta = false;
+          }
+        };
+      }
+      return resposta;
+    }
+
+    function verificaParenteses(expressao) {
+      const pilha = [];
+
+      for (let i = 0; i < expressao.length; i++) {
+        const char = expressao[i];
+
+        if (char === '(') {
+          pilha.push(char);
+        } else if (char === ')') {
+          if (pilha.length === 0) {
+            return false;
+          }
+
+          pilha.pop();
+        }
+      }
+
+      return pilha.length === 0;
+    }
+
+
+    function resolveExpressaoMatematica(expressao) {
+      // Função para dividir a expressão em tokens
+      const tokenizar = (expressao) => {
+        const regex = /\d+\.?\d*|[-()+*/]/g;
+        return expressao.match(regex) || [];
+      };
+
+      // Função para analisar a expressão a partir dos tokens
+      const analisar = (tokens) => {
+        let indice = 0;
+
+        // Função para analisar um número
+        const analisarNumero = () => {
+          return parseFloat(tokens[indice++]);
+        };
+
+        // Função para analisar uma expressão
+        const adicaoSubtracao = () => {
+          let esquerda = multiplicacaoDivisao();
+
+          // Processar os operadores de adição e subtração
+          while (indice < tokens.length && (tokens[indice] === '+' || tokens[indice] === '-')) {
+            const operador = tokens[indice++];
+            const direita = multiplicacaoDivisao();
+            esquerda = operador === '+' ? esquerda + direita : esquerda - direita;
+          }
+
+          return esquerda;
+        };
+
+        // Função para analisar um termo
+        const multiplicacaoDivisao = () => {
+          let esquerda = analisarItem();
+
+          // Processar os operadores de multiplicação e divisão
+          while (indice < tokens.length && (tokens[indice] === '*' || tokens[indice] === '/')) {
+            const operador = tokens[indice++];
+            const direita = analisarItem();
+            esquerda = operador === '*' ? esquerda * direita : esquerda / direita;
+          }
+
+          return esquerda;
+        };
+
+        // Função para analisar um fator
+        const analisarItem = () => {
+          if (tokens[indice] === '(') {
+            indice++;
+            const resultado = adicaoSubtracao();
+            indice++; // Consumir o ')'
+            return resultado;
+          } else if (tokens[indice] === '-') {
+            indice++;
+            return -analisarItem();
+          } else {
+            return analisarNumero();
+          }
+        };
+        
+        return adicaoSubtracao();
+      };
+
+      // Obter os tokens da expressão
+      const tokens = tokenizar(expressao);
+
+      // Realizar a análise sintática e retornar o resultado
+      return analisar(tokens);
+    }
+
+//FUNÇÕES ACIMA GENERICAS ABAIXO EXECUÇÃO
+
+    function manuseioUpload(event) {
+      const fileList = event.target.files;
+
+      if (fileList.length > 0) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          const fileContent = e.target.result;
+          const textContent = getTextContent(fileContent);
+          console.log(textContent);
+        };
+
+        reader.readAsText(fileList[0]);
+      }
+    }
+    function getTextContent(fileContent) {
+      console.log(fileContent)
+      const expressoes = fileContent.trim().split(';');
+
+      console.log('expressoes')
+      console.log(expressoes)
+      console.log(expressoes[0] == "")
+
+      if (expressoes[0] == "") {
+        const listaResultados = document.getElementById('listaResultados');
+        listaResultados.innerHTML = 'informe uma expressão válida.';
+      }
+      else if (expressoes[expressoes.length - 1] !== "") {
+        const listaResultados = document.getElementById('listaResultados');
+        listaResultados.innerHTML = 'a expressão ' + expressoes[expressoes.length - 1] + ' não foi encerrada corretamente esperado token ;'
+      }
+      else if (expressoes.length > 0) {
+        // Limpar resultados anteriores
+        const listaResultados = document.getElementById('listaResultados');
+        listaResultados.innerHTML = '';
+
+        // Calcular e exibir resultados
+        expressoes.forEach((expressao) => {
+          const expressaoLimpa = expressao.trim();
+          if (verify_tokens(expressaoLimpa, caracateresPermitidos) == false) {
+            const listaResultados = document.getElementById('listaResultados');
+            listaResultados.innerHTML = 'a expressão ' + expressaoLimpa + ' possuí tokens não permitidos';
+          }
+          else if (verificaParenteses(expressao) == false) {
+            const listaResultados = document.getElementById('listaResultados');
+            listaResultados.innerHTML = 'a expressão ' + expressaoLimpa + ' possuí problemas de abertura e fechamento de parenteses';
+          }
+          else if (expressaoLimpa) {
+            const resultadoAnalise = analiseLexica(expressaoLimpa);
+            const resultadoExpressao = resolveExpressaoMatematica(expressaoLimpa);
+
+            // Exibir resultados
+            const expressaoItem = document.createElement('li');
+            expressaoItem.innerHTML = `<strong>${expressaoLimpa}:</strong> Análise: ${JSON.stringify(resultadoAnalise)}, Resultado: ${resultadoExpressao}`;
+            listaResultados.appendChild(expressaoItem);
+          }
+        })
+
+      }
+    }
+
+    document.getElementById('uploadBtn').addEventListener('change', manuseioUpload);
+
+    document.getElementById('calcularBtn').addEventListener('click', () => {
+      const expressaoInput = document.getElementById('expressaoInput');
+      const expressoes = expressaoInput.value.trim().split(';');
+
+      console.log('expressoes')
+      console.log(expressoes)
+      console.log(expressoes[0] == "")
+
+      if (expressoes[0] == "") {
+        const listaResultados = document.getElementById('listaResultados');
+        listaResultados.innerHTML = 'informe uma expressõa válida.';
+      }
+      else if (expressoes[expressoes.length - 1] !== "") {
+        const listaResultados = document.getElementById('listaResultados');
+        listaResultados.innerHTML = 'a expressão ' + expressoes[expressoes.length - 1] + ' não foi encerrada corretamente esperado token ;'
+      }
+      else if (expressoes.length > 0) {
+        // Limpar resultados anteriores
+        const listaResultados = document.getElementById('listaResultados');
+        listaResultados.innerHTML = '';
+
+        // Calcular e exibir resultados
+        expressoes.forEach((expressao) => {
+          const expressaoLimpa = expressao.trim();
+          if (verify_tokens(expressaoLimpa, caracateresPermitidos) == false) {
+            const listaResultados = document.getElementById('listaResultados');
+            listaResultados.innerHTML = 'a expressão ' + expressaoLimpa + ' possuí tokens não permitidos';
+          }
+          else if (verificaParenteses(expressao) == false) {
+            const listaResultados = document.getElementById('listaResultados');
+            listaResultados.innerHTML = 'a expressão ' + expressaoLimpa + ' possuí problemas de abertura e fechamento de parenteses';
+          }
+          else if (expressaoLimpa) {
+            const resultadoAnalise = analiseLexica(expressaoLimpa);
+            const resultadoExpressao = resolveExpressaoMatematica(expressaoLimpa);
+
+            // Exibir resultados
+            const expressaoItem = document.createElement('li');
+            expressaoItem.innerHTML = `<strong>${expressaoLimpa}:</strong> Análise: ${JSON.stringify(resultadoAnalise)}, Resultado: ${resultadoExpressao}`;
+            listaResultados.appendChild(expressaoItem);
+          }
+        });
+        // Limpar caixa de texto
+        expressaoInput.value = '';
+      }
+    });
+  </script>
+</body>
+
+</html>
